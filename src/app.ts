@@ -7,6 +7,7 @@ import * as csv from 'fast-csv';
 import path from 'path';
 import IMedicHospital from './models/medHospital';
 import IMedicWork from './models/medicWork';
+import mime from 'mime-types';
 
 const app = express();
 
@@ -48,57 +49,68 @@ app.post('/', upload.single('file'), (req, res) => {
             res.sendStatus(201);
         }
     } else {
-        let fileRows: IMedicHospital[] = [];
+        if (req.file !== undefined) {
+            // remove end of mime.contentType string regarding 'utf' details
+            const mmType: string | false = mime.contentType(req.file.mimetype).toString().substring(0, 8);
 
-        // open uploaded file
-        fs.createReadStream(path.resolve(req.file.path))
-            .pipe(csv.parse({ headers: true }))
-            .on('error', error => console.error(error))
-            .on("data", function (data: any) {
-                const temp: IMedicHospital = <IMedicHospital>({
-                    id: +data.ID,
-                    familyName: data[' FamilyName'].substring(1),
-                    givenName: data[' GivenName'].substring(1),
-                    facilityId: +data[' FacilityId'],
-                    systemId: data[' SystemId'].substring(1),
-                    nameId: data[' NameId'].substring(1),
-                    active: data[' Active'] === ' true' ? true : false
-                });
-                if (fileRows.findIndex(doc => doc.id === temp.id
-                    && doc.familyName !== temp.familyName) !== -1) {
-                    console.log(chalk.inverse.red('Different names for same id!'));
-                }
-                fileRows.push(temp); // push each row
-            })
-            .on("end", function () {
-                fs.unlinkSync(req.file.path);   // remove temp file
-                //process "fileRows"
-                let medicWork: IMedicWork[] = [];
-                fileRows.forEach((element: IMedicHospital) => {
-                    if (element.active) {
-                        const docIndex: number = medicWork.findIndex(doc => doc.id === element.id);
-                        if (docIndex !== -1) {
-                            medicWork[docIndex].nameId.push(element.nameId);
-                        } else {
-                            let hospital: string[] = [];
-                            hospital.push(element.nameId);
-                            const temp2: IMedicWork = <IMedicWork>({
-                                id: element.id,
-                                familyName: element.familyName,
-                                givenName: element.givenName,
-                                nameId: hospital
-                            })
-                            medicWork.push(temp2);
+            if (mmType === 'text/csv') {
+                let fileRows: IMedicHospital[] = [];
+
+                // open uploaded file
+                fs.createReadStream(path.resolve(req.file.path))
+                    .pipe(csv.parse({ headers: true }))
+                    .on('error', error => console.error(error))
+                    .on("data", function (data: any) {
+                        const temp: IMedicHospital = <IMedicHospital>({
+                            id: +data.ID,
+                            familyName: data[' FamilyName'].substring(1),
+                            givenName: data[' GivenName'].substring(1),
+                            facilityId: +data[' FacilityId'],
+                            systemId: data[' SystemId'].substring(1),
+                            nameId: data[' NameId'].substring(1),
+                            active: data[' Active'] === ' true' ? true : false
+                        });
+                        if (fileRows.findIndex(doc => doc.id === temp.id
+                            && doc.familyName !== temp.familyName) !== -1) {
+                            console.log(chalk.inverse.red('Different names for same id!'));
                         }
-                    }
-                });
-                console.log(chalk.inverse.green('Medic active in hospitals:'))
-                medicWork.forEach(el => {
-                    console.log(`${el.familyName} ${el.givenName}: ${el.nameId}`);
-                });
-            });
+                        fileRows.push(temp); // push each row
+                    })
+                    .on("end", function () {
+                        fs.unlinkSync(req.file.path);   // remove temp file
+                        //process "fileRows"
+                        let medicWork: IMedicWork[] = [];
+                        fileRows.forEach((element: IMedicHospital) => {
+                            if (element.active) {
+                                const docIndex: number = medicWork.findIndex(doc => doc.id === element.id);
+                                if (docIndex !== -1) {
+                                    medicWork[docIndex].nameId.push(element.nameId);
+                                } else {
+                                    let hospital: string[] = [];
+                                    hospital.push(element.nameId);
+                                    const temp2: IMedicWork = <IMedicWork>({
+                                        id: element.id,
+                                        familyName: element.familyName,
+                                        givenName: element.givenName,
+                                        nameId: hospital
+                                    })
+                                    medicWork.push(temp2);
+                                }
+                            }
+                        });
+                        console.log(chalk.inverse.green('Medics active in hospitals:'))
+                        medicWork.forEach(el => {
+                            console.log(`${el.familyName} ${el.givenName}: ${el.nameId}`);
+                        });
+                    });
 
-        res.sendStatus(201);
+                res.sendStatus(201);
+            } else {
+                res.sendStatus(204);
+            }
+        } else {
+            res.sendStatus(204);
+        }
     }
 })
 
