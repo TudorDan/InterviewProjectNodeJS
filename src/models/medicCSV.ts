@@ -1,11 +1,11 @@
-interface IMedicHospital {
+interface IMedicCSV {
     id: number;
     familyName: string;
     givenName: string;
-    facilityId: number;
+    facilityId: string;
     systemId: string;
     nameId: string;
     active: boolean;
 }
 
-export default IMedicHospital;
+export default IMedicCSV;
