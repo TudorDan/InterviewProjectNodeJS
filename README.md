@@ -83,6 +83,5 @@ ID, FamilyName, GivenName, FacilityId, SystemId, NameId, Active
 
 ## Implementation
 
-Swagger:
 ![vscode](vscode.png)
 ![postman](postman.png)
