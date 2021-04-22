@@ -5,7 +5,7 @@ This is part of the interview projects requested by client from Codecool's JobHu
 ## Description
 
 A NodeJS endpoint listening for specific requests.
-Client requirements is located in "interviu_nodeJS.docx" file.
+Client requirements are located in "interviu_nodeJS.docx" file.
 Deadline was in several days.
 
 ## Technologies used
